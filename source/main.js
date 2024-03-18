@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {CharacterController} from './CharacterController.js'
 import {ThirdPersonCamera} from './ThirdPersonCamera.js';
+import { Skybox } from './Sky.js';
 import Stats from 'https://cdnjs.cloudflare.com/ajax/libs/stats.js/17/Stats.js'
 
 
@@ -34,11 +35,13 @@ class BasicWorldDemo
     const fov = 60;
     const aspect = 1920 / 1080;
     const near = 1.0;
-    const far = 1000.0;
+    const far = 1500.0;
     this._camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
     this._camera.position.set(25, 10, 25);
 
     this._scene = new THREE.Scene();
+    this._scene.background = new THREE.Color(0xFF00FF);
+    this._scene.fog = new THREE.FogExp2(0x89b2eb, 0.002);
 
     let light = new THREE.DirectionalLight(0xFFFFFF, 2.5);
     light.position.set(20, 100, 20);
@@ -49,20 +52,25 @@ class BasicWorldDemo
     light.shadow.mapSize.height = 2048;
     light.shadow.camera.near = 0.1;
     light.shadow.camera.far = 500.0;
-    light.shadow.camera.left = 250;
-    light.shadow.camera.right = -250;
-    light.shadow.camera.top = 250;
-    light.shadow.camera.bottom = -250;
+    light.shadow.camera.left = 500;
+    light.shadow.camera.right = -500;
+    light.shadow.camera.top = 500;
+    light.shadow.camera.bottom = -500;
 
-    light.shadow.mapSize.width = 6096;
-    light.shadow.mapSize.height = 6096;
+    light.shadow.mapSize.width = 8096;
+    light.shadow.mapSize.height = 8096;
 
+    this._sun = light;
     this._scene.add(light);
 
     light = new THREE.AmbientLight(0xFFFFFF, .5);
     this._scene.add(light);
 
-    const loader = new THREE.CubeTextureLoader();
+    this._sky = new Skybox({
+      scene: this._scene,
+    });
+
+    /* const loader = new THREE.CubeTextureLoader();
     const texture = loader.load([
         './resources/posx.jpg',
         './resources/negx.jpg',
@@ -71,12 +79,12 @@ class BasicWorldDemo
         './resources/posz.jpg',
         './resources/negz.jpg',
     ]);
-    this._scene.background = texture;
+    this._scene.background = texture; */
 
     const plane = new THREE.Mesh(
-        new THREE.PlaneGeometry(500, 500, 50, 50),
+        new THREE.PlaneGeometry(1000, 1000, 250, 250),
         new THREE.MeshStandardMaterial({
-            color: 0xFFFFFF,
+            color: 0xB3E260,
           }));
     plane.castShadow = false;
     plane.receiveShadow = true;

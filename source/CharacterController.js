@@ -40,7 +40,7 @@ export class CharacterController
     _LoadModels() 
     {
         const loader = new FBXLoader();
-        loader.setPath('./resources/ninja/');
+        loader.setPath('../resources/ninja/');
         loader.load('ninja.fbx', (fbx) => {
             fbx.scale.setScalar(0.1);
             fbx.traverse(c => {
@@ -68,7 +68,7 @@ export class CharacterController
             };
 
             const loader = new FBXLoader(this._manager);
-            loader.setPath('./resources/ninja/');
+            loader.setPath('../resources/ninja/');
             loader.load('walk.fbx', (a) => { _OnLoad('walk', a); });
             loader.load('backward.fbx', (a) => { _OnLoad('backward', a); });
             loader.load('run.fbx', (a) => { _OnLoad('run', a); });
@@ -125,6 +125,7 @@ export class CharacterController
             acc.multiplyScalar(2.5);
         }
 
+        if(this._stateMachine._currentState == null) return;
         if (this._stateMachine._currentState.Name == 'dance' || this._stateMachine._currentState.Name == 'turnLeft' || this._stateMachine._currentState.Name == 'turnRight') 
         {
             acc.multiplyScalar(0.0);
