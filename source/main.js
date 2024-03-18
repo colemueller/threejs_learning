@@ -4,6 +4,7 @@ import {CharacterController} from './CharacterController.js'
 import {ThirdPersonCamera} from './ThirdPersonCamera.js';
 import { Skybox } from './Sky.js';
 import Stats from 'https://cdnjs.cloudflare.com/ajax/libs/stats.js/17/Stats.js'
+import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
 
 class BasicWorldDemo 
@@ -100,10 +101,29 @@ class BasicWorldDemo
       scene: this._scene,
     });
 
+    this._orbitControls = new OrbitControls(this._camera, this._threejs.domElement);
+    this._orbitControls.enabled = false;
+
     this._thirdPersonCamera = new ThirdPersonCamera({
       camera: this._camera,
       target: this._controls,
     });
+
+    //camera gui
+    const gui = new GUI();
+    this.gui_params = {
+      Cole_Mueller: 'cole-mueller.com',
+      move: 'wasd',
+      jump: 'space',
+      emote: 'f',
+      switch: false,
+    };
+    
+    gui.add(this.gui_params, 'Cole_Mueller' ).disable();
+    gui.add(this.gui_params, 'move' ).disable();
+    gui.add(this.gui_params, 'jump' ).disable();
+    gui.add(this.gui_params, 'emote' ).disable();
+    gui.add(this.gui_params, 'switch').name("Use Orbit Camera");
 
     this._OnWindowResize();
     this._RAF();
@@ -148,7 +168,17 @@ class BasicWorldDemo
       this._controls.Update(timeElapsedS);
     }
 
-    this._thirdPersonCamera.Update(timeElapsedS);
+    this._orbitControls.enabled = this.gui_params.switch;
+    if(this.gui_params.switch)
+    {
+      
+      this._orbitControls.target.set(this._controls.Position.x, this._controls.Position.y + 16.7, this._controls.Position.z);
+      this._orbitControls.update();
+    }
+    else
+    {
+      this._thirdPersonCamera.Update(timeElapsedS);
+    }
   }
 }
 
