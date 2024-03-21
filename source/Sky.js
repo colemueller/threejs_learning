@@ -55,7 +55,8 @@ export class Skybox
             uniforms: uniforms,
             vertexShader: _VS,
             fragmentShader: _FS,
-            side: THREE.BackSide
+            side: THREE.BackSide,
+            depthWrite: false,
         });
 
         const sky = new THREE.Mesh(skyGeo, skyMat);
