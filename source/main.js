@@ -73,7 +73,7 @@ class BasicWorldDemo
 
     const sphere = new THREE.Mesh(
       new THREE.SphereGeometry(15, 16, 16),
-      new THREE.MeshStandardMaterial()
+      new THREE.MeshBasicMaterial()
     );
     sphere.castShadow = false;
     sphere.receiveShadow = false;
@@ -187,139 +187,117 @@ class BasicWorldDemo
 
   _LoadMountainsAndTrees(gui, controls, scene)
   {
-    let count = 0;
-    const manager = new THREE.LoadingManager();
-    manager.onLoad = _OnLoad;
-    let object;
+    let _rocks;
+    let _trees;
+    let obj = new THREE.Object3D();
 
-    const _models = [];
-    const _rocks = [];
-    const _trees = [];
-    const loader = new FBXLoader(manager);
-    loader.setPath('../resources/nature/');
-    loader.load('Rock_1.fbx', function(fbx){object = fbx;});
+    let geo;
 
-    const rock_params = {
-      points: 46,
+    const _params = {
+      rockCount: 76,
       radius: 400,
-      yValue: -20,
-      treeNumber: 64,
+      yValue: 0,
+      treeCount: 64,
       treeArea: 350,
     };
-    
-    /* const folder = gui.addFolder( 'Mountain Spawn' );
-    folder.add(rock_params, 'treeNumber', 0, 500).step(1).onChange(AddTrees);
-    folder.add(rock_params, 'treeArea', 0, 500).onChange(AddTrees);
-    folder.add(rock_params, 'points', 8, 128 ).step(2).onChange(DrawCirclePoints);
-    folder.add(rock_params, 'radius', 60, 500 ).onChange(DrawCirclePoints);
-    folder.add(rock_params, 'yValue', -100, 100 ).onChange(DrawCirclePoints); */
 
-    //random rock, place in circle around character
-    function DrawCirclePoints()
-    {
-      let points = rock_params.points;
-      let radius = rock_params.radius;
-      let yValue = rock_params.yValue;
-      let center = controls.Position;
+    //const folder = gui.addFolder( 'Environment Models' );
+    /* folder.add(_params, 'rockCount', 8, 76 ).step(2).onChange(ArrangeRocks);
+    folder.add(_params, 'radius', 60, 500 ).onChange(ArrangeRocks);
+    folder.add(_params, 'yValue', -100, 100 ).onChange(ArrangeRocks); */
+    /* folder.add(_params, 'treeCount', 0, 64).step(1).onChange(ArrangeTrees);
+    folder.add(_params, 'treeArea', 0, 500).onChange(ArrangeTrees); */
 
-      const slice = 2 * Math.PI / points;
-      for(var i = 0; i < points; i++)
-      {
-        let rand = Math.round(Math.random() * 4);
-        let _mesh;
-        if(!_rocks[i]) _mesh = _models[rand].clone();
-        else _mesh = _rocks[i];
-        _mesh.frustumCulled = true;
-
-        let angle = slice * i;
-        let newX = center.x + radius * Math.cos(angle);
-        let newZ = center.z + radius * Math.sin(angle);
-
-        _mesh.position.set(newX, yValue, newZ);
-        
-        _rocks[i] = _mesh;
-        scene.add(_mesh);
-      }
-      AddTrees();
-    }
-
-    function AddTrees()
-    {
-      for(var i = 0; i < rock_params.treeNumber; i++)
-      {
-        let _mesh;
-        if(!_trees[i]) _mesh = _models[5].clone();
-        else continue;
-        _mesh.frustumCulled = true;
-
-        let randX = (Math.round(Math.random()) * 2 - 1) * (Math.random() * rock_params.treeArea);
-        let randZ = (Math.round(Math.random()) * 2 - 1) * (Math.random() * rock_params.treeArea);
-
-        _mesh.position.set(randX, 0, randZ);
-        _mesh.scale.set(8 + Math.random() * 4.0, 8 + Math.random() * 4.0, 8 + Math.random() * 4.0);
-
-        _trees[i] = _mesh;
-        scene.add(_mesh);
-      }
-    }
-
-    function _OnLoad()
-    {
-      count++;
-
-      object.traverse(c => {
-          c.castShadow = true;
-          c.receiveShadow = true;
-          c.material = new THREE.MeshLambertMaterial({color: 0x4a4a4a,});
+    const loader = new FBXLoader();
+    loader.setPath('../resources/nature/');
+    loader.load('Rock_2.fbx', function(fbx){
+      fbx.traverse(c => {
+        if(c.isMesh) geo = c.geometry;
       });
+      geo.receiveShadow = true;
+      geo.castShadow = true;
 
-      //trees
-      if(count >= 6)
-      {
-        const _tl = new THREE.TextureLoader();
-        const leaves = _tl.load('../resources/nature/textures/DB2X2_L01.png');
+      const rockMat = new THREE.MeshLambertMaterial({color:0x362820,});
 
-        object.scale.setScalar(10);
-        object.traverse(d => {
-          const barkMat = new THREE.MeshLambertMaterial({color: 0x5c3e15,});
+      _rocks = new THREE.InstancedMesh(geo, rockMat, _params.rockCount);
+      _rocks.instanceMatrix.setUsage(THREE.StaticDrawUsage);
+      scene.add(_rocks);
 
-          const leafMat = new THREE.MeshStandardMaterial();
-          leafMat.blending = THREE.NormalBlending;
-          leafMat.map = leaves;
-          //too expensive
-          /* leafMat.alphaMap = leaves;
-          leafMat.alphaTest = 0.1; */
-          leafMat.transparent = true;
+      //set rock transform data
+      ArrangeRocks();
+    });
 
-          d.material = [barkMat, leafMat];
-        });
-        
-      }
+    //TODO: find a lower poly tree model after adding grass in
+    loader.load('Tree.fbx', function(fbx){
+      fbx.traverse(c => {
+        if(c.isMesh) geo = c.geometry;
+      });
+      geo.receiveShadow = true;
+      geo.castShadow = true;
 
-      _models.push(object);
+      const _tl = new THREE.TextureLoader();
+      const leaves = _tl.load('../resources/nature/textures/DB2X2_L01.png');
       
-      switch(count)
-      {
-        case 1:
-          loader.load('Rock_2.fbx', function(fbx){object = fbx;});
-          break;
-        case 2:
-          loader.load('Rock_3.fbx', function(fbx){object = fbx;});
-          break;
-        case 3:
-          loader.load('Rock_4.fbx', function(fbx){object = fbx;});
-          break;
-        case 4:
-          loader.load('Rock_5.fbx', function(fbx){object = fbx;});
-          break;
-        case 5:
-          loader.load('Tree.fbx', function(fbx){object = fbx;});
-          break;
-        default:
-          break;
-      }
+      const barkMat = new THREE.MeshLambertMaterial({color: 0x5c3e15,});
 
-      if(count == 6) DrawCirclePoints();
+      const leafMat = new THREE.MeshStandardMaterial();
+      leafMat.map = leaves;
+      //too expensive
+      /* leafMat.alphaMap = leaves;
+      leafMat.alphaTest = 0.1; */
+      leafMat.transparent = true;
+
+      _trees = new THREE.InstancedMesh(geo, [barkMat, leafMat], _params.treeCount);
+      _trees.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      scene.add(_trees);
+
+      //set tree transform data
+      ArrangeTrees();
+    });
+
+    function ArrangeRocks()
+    {
+      _rocks.count = _params.rockCount;
+      const slice = 2 * Math.PI / _params.rockCount;
+      const center = controls.Position;
+      for(var i = 0; i < _params.rockCount; i++)
+      {
+        let angle = slice * i;
+        let newX = center.x + _params.radius * Math.cos(angle);
+        let newZ = center.z + _params.radius * Math.sin(angle);
+
+        obj.position.set(newX, _params.yValue, newZ);
+        let val = 50 + Math.random() * 50;
+        obj.scale.set(val, val, val);
+        obj.rotation.x = -Math.PI / 2;
+        obj.rotateZ(Math.random() * (2 * Math.PI));
+
+        obj.updateMatrix();
+
+        _rocks.setMatrixAt(i, obj.matrix);
+      }
+      _rocks.instanceMatrix.needsUpdate = true;
+    }
+
+    function ArrangeTrees()
+    {
+      _trees.count = _params.treeCount;
+      for(var i = 0; i < _params.treeCount; i++)
+      {
+        let randX = (Math.round(Math.random()) * 2 - 1) * (Math.random() * _params.treeArea);
+        let randZ = (Math.round(Math.random()) * 2 - 1) * (Math.random() * _params.treeArea);
+
+        obj.position.set(randX, 0, randZ);
+        var val = 8 + Math.random() * 4.0;
+        obj.scale.set(val, val, val);
+        obj.rotation.set(0,0,0);
+        obj.rotateY(Math.random() * (2 * Math.PI));
+
+        obj.updateMatrix();
+
+        _trees.setMatrixAt(i, obj.matrix);
+      }
+      _trees.instanceMatrix.needsUpdate = true;
     }
   }
 }
