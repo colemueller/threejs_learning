@@ -17,6 +17,9 @@ class BasicWorldDemo
 
   _Initialize() 
   {
+    this.M_TMP = new THREE.Matrix4();
+    this._instancedMeshes = {}
+
     this._threejs = new THREE.WebGLRenderer({
       antialias: true,
     });
@@ -43,7 +46,7 @@ class BasicWorldDemo
 
     this._scene = new THREE.Scene();
     this._scene.background = new THREE.Color(0xFF00FF);
-    this._scene.fog = new THREE.FogExp2(0x89b2eb, 0.00075);
+    this._scene.fog = new THREE.FogExp2(0x89b2eb, 0.0015); //0.00075
 
     let light = new THREE.DirectionalLight(0xFFFFFF, 2.5);
     light.position.set(50, 100, 50);
@@ -102,6 +105,7 @@ class BasicWorldDemo
 
     this._orbitControls = new OrbitControls(this._camera, this._threejs.domElement);
     this._orbitControls.maxDistance = 125;
+    this._orbitControls.enableDamping = true;
     this._orbitControls.enabled = false;
 
     this._thirdPersonCamera = new ThirdPersonCamera({
@@ -182,23 +186,57 @@ class BasicWorldDemo
       this._thirdPersonCamera.Update(timeElapsedS);
     }
 
+    this._FrustumCullInstancedMeshes();
+
     this._sun.position.set(this._controls.Position.x + 450, 750, this._controls.Position.z + 450);
+  }
+
+  _FrustumCullInstancedMeshes()
+  {
+    let culledCount = 0;
+    let totalMeshes = 0;
+    const frustum = new THREE.Frustum().setFromProjectionMatrix(this.M_TMP.copy(this._camera.projectionMatrix).multiply(this._camera.matrixWorldInverse));
+
+    //inside loop of every instanced mesh cell
+    for(var i = 0; i < Object.keys(this._instancedMeshes).length; i++)
+    {
+      totalMeshes++;
+
+      let currentMesh = this._scene.getObjectById(this._instancedMeshes[i]);
+
+      //create bounding box around cell
+      const boundingBox= new THREE.Box3().setFromObject(currentMesh);
+
+      if (!frustum.intersectsBox(boundingBox)) 
+      {
+        culledCount++;
+        currentMesh.visible = false;
+        continue;
+      }
+      currentMesh.visible = true;
+    }
+    /* console.log("total instanced objects: " + totalMeshes);
+    console.log("culled objects: " + culledCount + ". Shown objects: " + (totalMeshes - culledCount)); */
   }
 
   _LoadMountainsAndTrees(gui, controls, scene)
   {
-    let _rocks;
-    let _trees;
+    let _rock;
+    let _tree;
     let obj = new THREE.Object3D();
-
+    let rockMat;
+    let barkMat;
+    let leafMat;
     let geo;
 
+    const _meshes = {};
+
     const _params = {
-      rockCount: 76,
-      radius: 400,
-      yValue: 0,
-      treeCount: 64,
-      treeArea: 350,
+      rockCount: 46, //change back to 76 
+      radius: 425,
+      yValue: -5,
+      treeCount: 28, //orig 64
+      treeArea: 300,
     };
 
     //const folder = gui.addFolder( 'Environment Models' );
@@ -214,14 +252,11 @@ class BasicWorldDemo
       fbx.traverse(c => {
         if(c.isMesh) geo = c.geometry;
       });
-      geo.receiveShadow = true;
-      geo.castShadow = true;
 
-      const rockMat = new THREE.MeshLambertMaterial({color:0x362820,});
-
-      _rocks = new THREE.InstancedMesh(geo, rockMat, _params.rockCount);
-      _rocks.instanceMatrix.setUsage(THREE.StaticDrawUsage);
-      scene.add(_rocks);
+      rockMat = new THREE.MeshLambertMaterial({color:0x362820,});
+      
+      _rock = new THREE.InstancedBufferGeometry().copy(geo);
+      _rock.instanceCount = 1;
 
       //set rock transform data
       ArrangeRocks();
@@ -232,32 +267,30 @@ class BasicWorldDemo
       fbx.traverse(c => {
         if(c.isMesh) geo = c.geometry;
       });
-      geo.receiveShadow = true;
-      geo.castShadow = true;
 
       const _tl = new THREE.TextureLoader();
       const leaves = _tl.load('../resources/nature/textures/DB2X2_L01.png');
       
-      const barkMat = new THREE.MeshLambertMaterial({color: 0x5c3e15,});
+      barkMat = new THREE.MeshLambertMaterial({color: 0x5c3e15,});
 
-      const leafMat = new THREE.MeshStandardMaterial();
+      leafMat = new THREE.MeshStandardMaterial();
       leafMat.map = leaves;
       //too expensive
-      /* leafMat.alphaMap = leaves;
-      leafMat.alphaTest = 0.1; */
-      leafMat.transparent = true;
+      leafMat.alphaMap = leaves;
+      leafMat.alphaTest = 0.1;
+      leafMat.transparent = false;
 
-      _trees = new THREE.InstancedMesh(geo, [barkMat, leafMat], _params.treeCount);
-      _trees.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-      scene.add(_trees);
+      _tree = new THREE.InstancedBufferGeometry().copy(geo);
+      _tree.instanceCount = 1;
 
       //set tree transform data
       ArrangeTrees();
     });
 
+    this._instancedMeshes = _meshes;
+
     function ArrangeRocks()
     {
-      _rocks.count = _params.rockCount;
       const slice = 2 * Math.PI / _params.rockCount;
       const center = controls.Position;
       for(var i = 0; i < _params.rockCount; i++)
@@ -267,37 +300,54 @@ class BasicWorldDemo
         let newZ = center.z + _params.radius * Math.sin(angle);
 
         obj.position.set(newX, _params.yValue, newZ);
-        let val = 50 + Math.random() * 50;
+        let val = 85 + Math.random() * 25;
         obj.scale.set(val, val, val);
         obj.rotation.x = -Math.PI / 2;
         obj.rotateZ(Math.random() * (2 * Math.PI));
 
         obj.updateMatrix();
 
-        _rocks.setMatrixAt(i, obj.matrix);
+        const mesh = new THREE.Mesh(_rock, rockMat);
+        mesh.castShadow = false;
+        mesh.receiveShadow = false;
+        mesh.applyMatrix4(obj.matrix);
+        mesh.visible = false;
+
+        _meshes[Object.keys(_meshes).length] = mesh.id;
+
+        scene.add(mesh);
       }
-      _rocks.instanceMatrix.needsUpdate = true;
     }
 
     function ArrangeTrees()
     {
-      _trees.count = _params.treeCount;
+      obj.position.set(0,0,0);
+      obj.rotation.set(0,0,0);
+      obj.scale.set(1,1,1);
+      obj.updateMatrix();
+
       for(var i = 0; i < _params.treeCount; i++)
       {
         let randX = (Math.round(Math.random()) * 2 - 1) * (Math.random() * _params.treeArea);
         let randZ = (Math.round(Math.random()) * 2 - 1) * (Math.random() * _params.treeArea);
 
         obj.position.set(randX, 0, randZ);
-        var val = 8 + Math.random() * 4.0;
+        var val = 8 + Math.random() * 5.0;
         obj.scale.set(val, val, val);
-        obj.rotation.set(0,0,0);
         obj.rotateY(Math.random() * (2 * Math.PI));
 
         obj.updateMatrix();
 
-        _trees.setMatrixAt(i, obj.matrix);
+        const mesh = new THREE.Mesh(_tree, [barkMat, leafMat]);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mesh.applyMatrix4(obj.matrix);
+        mesh.visible = false;
+        
+        _meshes[Object.keys(_meshes).length] = mesh.id;
+
+        scene.add(mesh);
       }
-      _trees.instanceMatrix.needsUpdate = true;
     }
   }
 }
