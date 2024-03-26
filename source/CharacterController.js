@@ -34,6 +34,8 @@ export class CharacterController
         this._input = new CharacterControllerInput();
         this._stateMachine = new CharacterFSM(new CharacterControllerProxy(this._animations));
 
+        this._origin = new THREE.Vector3(0,0,0);
+
         this._LoadModels();
     }
 
@@ -125,12 +127,6 @@ export class CharacterController
             acc.multiplyScalar(2.5);
         }
 
-        if(this._stateMachine._currentState == null) return;
-        if (this._stateMachine._currentState.Name == 'dance' || this._stateMachine._currentState.Name == 'turnLeft' || this._stateMachine._currentState.Name == 'turnRight') 
-        {
-            acc.multiplyScalar(0.0);
-        }
-
         if (this._input._keys.forward) 
         {
             acc.multiplyScalar(1.75);
@@ -140,6 +136,13 @@ export class CharacterController
         {
             velocity.z -= acc.z * timeInSeconds;
         }
+        
+        if(this._stateMachine._currentState == null) return;
+        if (this._stateMachine._currentState.Name == 'dance' || this._stateMachine._currentState.Name == 'leftTurn' || this._stateMachine._currentState.Name == 'rightTurn') 
+        {
+            acc.multiplyScalar(0.0);
+        }
+
         const _turnSpeed = 1.25;
         if (this._input._keys.left) 
         {
@@ -172,6 +175,12 @@ export class CharacterController
 
         controlObject.position.add(forward);
         controlObject.position.add(sideways);
+
+        const bounds = 350;
+        if(controlObject.position.distanceTo(this._origin) >= bounds)
+        {
+            controlObject.position.set(controlObject.position.normalize().x * bounds, 0, controlObject.position.normalize().z * bounds);
+        }
 
         this._position.copy(controlObject.position);
 
@@ -378,27 +387,6 @@ class LeftTurnState extends State
     Update(timeElapsed, input)
     {
         if(input._keys.left) return;
-        if (input._keys.forward) 
-        {
-            if (input._keys.space) 
-            {
-                this._parent.SetState('jump');
-                return;
-            }
-
-            if (input._keys.shift) 
-            {
-                this._parent.SetState('run');
-                return;
-            }
-            this._parent.SetState('walk');
-            return;
-        }
-        else if(input._keys.backward)
-        {
-            this._parent.SetState('backward');
-            return;
-        }
 
         this._parent.SetState('idle');
     }
@@ -443,28 +431,6 @@ class RightTurnState extends State
     Update(timeElapsed, input)
     {
         if(input._keys.right) return;
-
-        if (input._keys.forward) 
-        {
-            if (input._keys.space) 
-            {
-                this._parent.SetState('jump');
-                return;
-            }
-
-            if (input._keys.shift) 
-            {
-                this._parent.SetState('run');
-                return;
-            }
-            this._parent.SetState('walk');
-            return;
-        }
-        else if(input._keys.backward)
-        {
-            this._parent.SetState('backward');
-            return;
-        }
 
         this._parent.SetState('idle');
     }

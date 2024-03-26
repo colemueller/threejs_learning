@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { Lensflare, LensflareElement } from './Lensflare.js';
 
 const _VS = `
 varying vec3 vWorldPosition;
@@ -31,6 +32,7 @@ export class Skybox
         this._params = params;
         
         this._LoadSky();
+        window.addEventListener( 'resize', this.onWindowResize );
     }
 
     _LoadSky() 
@@ -61,5 +63,30 @@ export class Skybox
 
         const sky = new THREE.Mesh(skyGeo, skyMat);
         this._params.scene.add(sky);
+
+        const loader = new THREE.TextureLoader();
+        const corona = loader.load('../resources/flares/corona.png');
+        const flare = loader.load('../resources/flares/flare.png');
+
+        const light = new THREE.PointLight( 0xffffff, 1.5, 0, 0 );
+        light.position.set(450, 750, 450);
+        light.castShadow = false;
+        light.frustumCulled = false;
+        this._params.scene.add(light);
+        this._sun = light;
+
+        const lensflare = new Lensflare();
+        lensflare.frustumCulled = false;
+        lensflare.addElement(new LensflareElement(corona, 150, 0, light.color));
+        lensflare.addElement(new LensflareElement(flare, 60, 0.6));
+        lensflare.addElement(new LensflareElement(flare, 70, 0.7));
+        lensflare.addElement(new LensflareElement(flare, 120, 0.9));
+        lensflare.addElement(new LensflareElement(flare, 70, 1));
+        light.add(lensflare);
+    }
+
+    Update()
+    {
+        this._sun.position.set(this._params.controls.Position.x + 450, 750, this._params.controls.Position.z + 450);
     }
 }

@@ -69,21 +69,7 @@ class BasicWorldDemo
 
     light = new THREE.AmbientLight(0xFFFFFF, .5);
     this._scene.add(light);
-
-    this._sky = new Skybox({
-      scene: this._scene,
-    });
-
-    const sphere = new THREE.Mesh(
-      new THREE.SphereGeometry(15, 16, 16),
-      new THREE.MeshBasicMaterial()
-    );
-    sphere.castShadow = false;
-    sphere.receiveShadow = false;
-    sphere.position.set(450, 750, 450);
-    this._sun = sphere;
-    this._scene.add(sphere);
-
+    
     const plane = new THREE.Mesh(
       new THREE.PlaneGeometry(800, 800, 250, 250),
       new THREE.MeshStandardMaterial({
@@ -103,8 +89,15 @@ class BasicWorldDemo
       scene: this._scene,
     });
 
+    this._sky = new Skybox({
+      scene: this._scene,
+      camera: this._camera,
+      controls: this._controls,
+    });
+
     this._orbitControls = new OrbitControls(this._camera, this._threejs.domElement);
     this._orbitControls.maxDistance = 125;
+    this._orbitControls.rotateSpeed = 0.5;
     this._orbitControls.enableDamping = true;
     this._orbitControls.enabled = false;
 
@@ -185,10 +178,10 @@ class BasicWorldDemo
     {
       this._thirdPersonCamera.Update(timeElapsedS);
     }
+    this._sky.Update(timeElapsedS);
 
     this._FrustumCullInstancedMeshes();
 
-    this._sun.position.set(this._controls.Position.x + 450, 750, this._controls.Position.z + 450);
   }
 
   _FrustumCullInstancedMeshes()
@@ -252,6 +245,7 @@ class BasicWorldDemo
       fbx.traverse(c => {
         if(c.isMesh) geo = c.geometry;
       });
+      geo.computeBoundingBox();
 
       rockMat = new THREE.MeshLambertMaterial({color:0x362820,});
       
@@ -267,6 +261,7 @@ class BasicWorldDemo
       fbx.traverse(c => {
         if(c.isMesh) geo = c.geometry;
       });
+      geo.computeBoundingBox();
 
       const _tl = new THREE.TextureLoader();
       const leaves = _tl.load('../resources/nature/textures/DB2X2_L01.png');
