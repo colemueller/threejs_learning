@@ -78,6 +78,7 @@ export class Skybox
         const lensflare = new Lensflare();
         lensflare.frustumCulled = false;
         lensflare.addElement(new LensflareElement(corona, 150, 0, light.color));
+        lensflare.addElement(new LensflareElement(flare, 70, -0.4));
         lensflare.addElement(new LensflareElement(flare, 60, 0.6));
         lensflare.addElement(new LensflareElement(flare, 70, 0.7));
         lensflare.addElement(new LensflareElement(flare, 120, 0.9));
