@@ -6,6 +6,7 @@ import {ThirdPersonCamera} from './ThirdPersonCamera.js';
 import { Skybox } from './Sky.js';
 import Stats from 'https://cdnjs.cloudflare.com/ajax/libs/stats.js/17/Stats.js'
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+import { Grass } from './Grass.js';
 
 
 class BasicWorldDemo 
@@ -123,6 +124,10 @@ class BasicWorldDemo
     gui.add(this.gui_params, 'switch').name("Use Orbit Camera");
 
     this._LoadMountainsAndTrees(gui, this._controls, this._scene);
+    /* this._grass = new Grass({
+      scene: this._scene,
+      camera: this._camera,
+    }); */
 
     this._OnWindowResize();
     this._RAF();
@@ -265,14 +270,16 @@ class BasicWorldDemo
 
       const _tl = new THREE.TextureLoader();
       const leaves = _tl.load('../resources/nature/textures/DB2X2_L01.png');
+      const spec = _tl.load('../resources/nature/textures/DB2X2_L01_Spec.png');
       
       barkMat = new THREE.MeshLambertMaterial({color: 0x5c3e15,});
 
       leafMat = new THREE.MeshStandardMaterial();
       leafMat.map = leaves;
+      
       //too expensive
-      leafMat.alphaMap = leaves;
-      leafMat.alphaTest = 0.1;
+      leafMat.alphaMap = spec;
+      leafMat.alphaTest = 0.04;
       leafMat.transparent = false;
 
       _tree = new THREE.InstancedBufferGeometry().copy(geo);

@@ -31,12 +31,6 @@ export class Skybox
     {
         this._params = params;
         
-        this._LoadSky();
-        window.addEventListener( 'resize', this.onWindowResize );
-    }
-
-    _LoadSky() 
-    {
         const hemiLight = new THREE.HemisphereLight(0xFFFFFF, 0xFFFFFFF, 0.6);
         hemiLight.color.setHSL(0.6, 1, 0.6);
         hemiLight.groundColor.setHSL(0.095, 1, 0.75);
@@ -65,6 +59,31 @@ export class Skybox
         this._params.scene.add(sky);
 
         const loader = new THREE.TextureLoader();
+
+        const cloudMat = new THREE.MeshLambertMaterial({color:0xFFFFFF});
+        cloudMat.side = THREE.BackSide;
+        const cloudTex = loader.load("../resources/scrollCloud.jpg");
+        cloudTex.wrapS = THREE.RepeatWrapping;
+        cloudTex.wrapT = THREE.RepeatWrapping;
+        cloudTex.repeat.set( 3, 3 );
+        this._cloudTex = cloudTex;
+
+        cloudMat.map = this._cloudTex;
+        cloudMat.alphaMap = cloudTex;
+        cloudMat.alphaTest = 0.1;
+        cloudMat.alphaToCoverage = true;
+        cloudMat.blending = THREE.AdditiveBlending;
+        cloudMat.transparent = false;
+
+        //const cloudMesh = new THREE.SphereGeometry(750, 32, 15);
+        const cloudMesh = new THREE.PlaneGeometry(2000, 2000 , 64, 64);
+        cloudMesh.castShadow = false;
+        cloudMesh.receiveShadow = false;
+        const clouds = new THREE.Mesh(cloudMesh, cloudMat);
+        clouds.position.set(0, 250, 0);
+        clouds.rotation.x = -Math.PI / 2;
+        this._params.scene.add(clouds);
+
         const corona = loader.load('../resources/flares/corona.png');
         const flare = loader.load('../resources/flares/flare.png');
 
@@ -86,8 +105,11 @@ export class Skybox
         light.add(lensflare);
     }
 
-    Update()
+    Update(timeElapsed)
     {
         this._sun.position.set(this._params.controls.Position.x + 450, 750, this._params.controls.Position.z + 450);
+        let _offset = this._cloudTex.offset.y;
+        if(_offset == 1) _offset == 0;
+        this._cloudTex.offset = new THREE.Vector2(0, (_offset + timeElapsed / 100));
     }
 }
