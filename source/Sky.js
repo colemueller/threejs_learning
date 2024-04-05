@@ -62,27 +62,48 @@ export class Skybox
 
         const cloudMat = new THREE.MeshLambertMaterial({color:0xFFFFFF});
         cloudMat.side = THREE.BackSide;
-        const cloudTex = loader.load("../resources/scrollCloud.jpg");
+        const cloudTex = loader.load("../resources/cloud2.jpg");
         cloudTex.wrapS = THREE.RepeatWrapping;
         cloudTex.wrapT = THREE.RepeatWrapping;
-        cloudTex.repeat.set( 3, 3 );
+        cloudTex.repeat.set( 5, 3 );
         this._cloudTex = cloudTex;
 
         cloudMat.map = this._cloudTex;
         cloudMat.alphaMap = cloudTex;
         cloudMat.alphaTest = 0.1;
-        cloudMat.alphaToCoverage = true;
+        //cloudMat.alphaToCoverage = true;
         cloudMat.blending = THREE.AdditiveBlending;
         cloudMat.transparent = false;
 
         //const cloudMesh = new THREE.SphereGeometry(750, 32, 15);
         const cloudMesh = new THREE.PlaneGeometry(2000, 2000 , 64, 64);
+        cloudMesh.morphAttributes.position = [];
+
+        var sphereFormation = [];
+        var uvs = cloudMesh.attributes.uv;
+        var uv = new THREE.Vector2();
+        var t = new THREE.Vector3();
+        for (let i = 0; i < uvs.count; i++) 
+        {
+            uv.fromBufferAttribute(uvs, i);
+            //console.log(uv.clone())
+            t.setFromSphericalCoords(
+                1500,
+                Math.PI * (1 - uv.y),
+                Math.PI * (uv.x - 0.5) * 2
+            );
+            sphereFormation.push(t.x, t.y, t.z);
+        }
+        cloudMesh.morphAttributes.position[0] = new THREE.Float32BufferAttribute(sphereFormation, 3);
+
         cloudMesh.castShadow = false;
         cloudMesh.receiveShadow = false;
-        const clouds = new THREE.Mesh(cloudMesh, cloudMat);
-        clouds.position.set(0, 250, 0);
-        clouds.rotation.x = -Math.PI / 2;
-        this._params.scene.add(clouds);
+
+        this.clouds = new THREE.Mesh(cloudMesh, cloudMat);
+        this.clouds.position.set(0, 100, 0);
+        this.clouds.rotation.x = -Math.PI / 2;
+        this._params.scene.add(this.clouds);
+        this.clouds.morphTargetInfluences[0] = 0.1;
 
         const corona = loader.load('../resources/flares/corona.png');
         const flare = loader.load('../resources/flares/flare.png');
@@ -111,5 +132,10 @@ export class Skybox
         let _offset = this._cloudTex.offset.y;
         if(_offset == 1) _offset == 0;
         this._cloudTex.offset = new THREE.Vector2(0, (_offset + timeElapsed / 100));
+    }
+
+    UpdateSkyMorph(value)
+    {
+        this.clouds.morphTargetInfluences[0] = value;
     }
 }

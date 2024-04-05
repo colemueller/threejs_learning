@@ -115,6 +115,7 @@ class BasicWorldDemo
       jump: 'space',
       emote: 'f',
       switch: false,
+      skymorph: 0.1,
     };
     
     gui.add(this.gui_params, 'Cole_Mueller' ).disable();
@@ -122,6 +123,7 @@ class BasicWorldDemo
     gui.add(this.gui_params, 'jump' ).disable();
     gui.add(this.gui_params, 'emote' ).disable();
     gui.add(this.gui_params, 'switch').name("Use Orbit Camera");
+    //gui.add(this.gui_params, 'skymorph', 0, 1);
 
     this._LoadMountainsAndTrees(gui, this._controls, this._scene);
     /* this._grass = new Grass({
@@ -184,6 +186,7 @@ class BasicWorldDemo
       this._thirdPersonCamera.Update(timeElapsedS);
     }
     this._sky.Update(timeElapsedS);
+    //this._sky.UpdateSkyMorph(this.gui_params.skymorph);
 
     this._FrustumCullInstancedMeshes();
 
