@@ -19,7 +19,7 @@ class BasicWorldDemo
   _Initialize() 
   {
     this.M_TMP = new THREE.Matrix4();
-    this._instancedMeshes = {}
+    this._instancedMeshes = [];
 
     this._threejs = new THREE.WebGLRenderer({
       antialias: true,
@@ -95,6 +95,18 @@ class BasicWorldDemo
       camera: this._camera,
       controls: this._controls,
     });
+
+    /* const cubeloader = new THREE.CubeTextureLoader();
+    const texture = cubeloader.load([
+        './resources/Cold_Sunset__Cam_2_Left+X.png',
+        './resources/Cold_Sunset__Cam_3_Right-X.png',
+        './resources/Cold_Sunset__Cam_4_Up+Y.png',
+        './resources/Cold_Sunset__Cam_5_Down-Y.png',
+        './resources/Cold_Sunset__Cam_0_Front+Z.png',
+        './resources/Cold_Sunset__Cam_1_Back-Z.png',
+    ]);
+
+    this._scene.background = texture; */
 
     this._orbitControls = new OrbitControls(this._camera, this._threejs.domElement);
     this._orbitControls.maxDistance = 125;
@@ -214,7 +226,7 @@ class BasicWorldDemo
         currentMesh.visible = false;
         continue;
       }
-      currentMesh.visible = true;
+      if(currentMesh.visible == false) currentMesh.visible = true;
     }
     /* console.log("total instanced objects: " + totalMeshes);
     console.log("culled objects: " + culledCount + ". Shown objects: " + (totalMeshes - culledCount)); */
@@ -257,7 +269,8 @@ class BasicWorldDemo
 
       rockMat = new THREE.MeshLambertMaterial({color:0x362820,});
       
-      _rock = new THREE.InstancedBufferGeometry().copy(geo);
+      //_rock = new THREE.InstancedBufferGeometry().copy(geo);
+      _rock = geo;
       _rock.instanceCount = 1;
 
       //set rock transform data
@@ -265,27 +278,28 @@ class BasicWorldDemo
     });
 
     //TODO: find a lower poly tree model after adding grass in
-    loader.load('Tree.fbx', function(fbx){
+    loader.load('Tree_1.fbx', function(fbx){
       fbx.traverse(c => {
         if(c.isMesh) geo = c.geometry;
       });
       geo.computeBoundingBox();
 
-      const _tl = new THREE.TextureLoader();
-      const leaves = _tl.load('../resources/nature/textures/DB2X2_L01.png');
-      const spec = _tl.load('../resources/nature/textures/DB2X2_L01_Spec.png');
+      //const _tl = new THREE.TextureLoader();
+      //const leaves = _tl.load('../resources/nature/textures/DB2X2_L01.png');
+      //const spec = _tl.load('../resources/nature/textures/DB2X2_L01_Spec.png');
       
       barkMat = new THREE.MeshLambertMaterial({color: 0x5c3e15,});
 
-      leafMat = new THREE.MeshStandardMaterial();
-      leafMat.map = leaves;
+      leafMat = new THREE.MeshStandardMaterial({color: 0x59b535,});
+      //leafMat.map = leaves;
       
       //too expensive
-      leafMat.alphaMap = spec;
+      /* leafMat.alphaMap = spec;
       leafMat.alphaTest = 0.04;
-      leafMat.transparent = false;
+      leafMat.transparent = false; */
 
-      _tree = new THREE.InstancedBufferGeometry().copy(geo);
+      //_tree = new THREE.InstancedBufferGeometry().copy(geo);
+      _tree = geo;
       _tree.instanceCount = 1;
 
       //set tree transform data
@@ -298,6 +312,9 @@ class BasicWorldDemo
     {
       const slice = 2 * Math.PI / _params.rockCount;
       const center = controls.Position;
+      /* const mesh = new THREE.InstancedMesh(_rock, rockMat, _params.rockCount);
+      mesh.castShadow = false;
+      mesh.receiveShadow = false; */
       for(var i = 0; i < _params.rockCount; i++)
       {
         let angle = slice * i;
@@ -311,6 +328,7 @@ class BasicWorldDemo
         obj.rotateZ(Math.random() * (2 * Math.PI));
 
         obj.updateMatrix();
+        //mesh.setMatrixAt(i, obj.matrix);
 
         const mesh = new THREE.Mesh(_rock, rockMat);
         mesh.castShadow = false;
@@ -322,6 +340,9 @@ class BasicWorldDemo
 
         scene.add(mesh);
       }
+      /* mesh.computeBoundingBox();
+      scene.add(mesh);
+      _meshes.push(mesh); */
     }
 
     function ArrangeTrees()
@@ -331,17 +352,23 @@ class BasicWorldDemo
       obj.scale.set(1,1,1);
       obj.updateMatrix();
 
+      /* const mesh = new THREE.InstancedMesh(_tree, [barkMat, leafMat], _params.treeCount);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true; */
+
       for(var i = 0; i < _params.treeCount; i++)
       {
         let randX = (Math.round(Math.random()) * 2 - 1) * (Math.random() * _params.treeArea);
         let randZ = (Math.round(Math.random()) * 2 - 1) * (Math.random() * _params.treeArea);
 
         obj.position.set(randX, 0, randZ);
-        var val = 8 + Math.random() * 5.0;
+        var val = 6 + Math.random() * 2.0;
         obj.scale.set(val, val, val);
-        obj.rotateY(Math.random() * (2 * Math.PI));
+        obj.rotation.x = -Math.PI / 2;
+        obj.rotateZ(Math.random() * (2 * Math.PI));
 
         obj.updateMatrix();
+        //mesh.setMatrixAt(i, obj.matrix);
 
         const mesh = new THREE.Mesh(_tree, [barkMat, leafMat]);
         mesh.castShadow = true;
@@ -353,6 +380,9 @@ class BasicWorldDemo
 
         scene.add(mesh);
       }
+      /* mesh.computeBoundingBox();
+      scene.add(mesh);
+      _meshes.push(mesh); */
     }
   }
 }

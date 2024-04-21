@@ -131,7 +131,7 @@ export class Skybox
         this._sun.position.set(this._params.controls.Position.x + 450, 750, this._params.controls.Position.z + 450);
         let _offset = this._cloudTex.offset.y;
         if(_offset == 1) _offset == 0;
-        this._cloudTex.offset = new THREE.Vector2(0, (_offset + timeElapsed / 100));
+        this._cloudTex.offset = new THREE.Vector2(0, (_offset + timeElapsed / 300));
     }
 
     UpdateSkyMorph(value)

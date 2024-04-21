@@ -126,31 +126,30 @@ export class CharacterController
         {
             acc.multiplyScalar(2.5);
         }
-
-        if (this._input._keys.forward) 
-        {
-            acc.multiplyScalar(1.75);
-            velocity.z += acc.z * timeInSeconds;
-        }
-        if (this._input._keys.backward) 
-        {
-            velocity.z -= acc.z * timeInSeconds;
-        }
-        
         if(this._stateMachine._currentState == null) return;
+        
         if (this._stateMachine._currentState.Name == 'dance' || this._stateMachine._currentState.Name == 'leftTurn' || this._stateMachine._currentState.Name == 'rightTurn') 
         {
             acc.multiplyScalar(0.0);
         }
-
+        else if (this._input._keys.forward) 
+        {
+            acc.multiplyScalar(1.75);
+            velocity.z += acc.z * timeInSeconds;
+        }
+        else if (this._input._keys.backward) 
+        {
+            velocity.z -= acc.z * timeInSeconds;
+        }
+        
         const _turnSpeed = 1.25;
-        if (this._input._keys.left) 
+        if (this._input._keys.left && this._stateMachine._currentState.Name != 'rightTurn') 
         {
             _A.set(0, 1, 0);
             _Q.setFromAxisAngle(_A, _turnSpeed * Math.PI * timeInSeconds * this._acceleration.y);
             _R.multiply(_Q);
         }
-        if (this._input._keys.right) 
+        if (this._input._keys.right && this._stateMachine._currentState.Name != 'leftTurn') 
         {
             _A.set(0, 1, 0);
             _Q.setFromAxisAngle(_A, _turnSpeed * -Math.PI * timeInSeconds * this._acceleration.y);
